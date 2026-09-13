@@ -701,7 +701,7 @@ export async function syncLaundry(direction: SyncDirection): Promise<SyncResult>
         if (!spreadsheetId) {
           throw new Error("Shared records ID not configured");
         }
-        const rows = await fetchSheetRowsRaw(spreadsheetId, "laundry!A:I");
+        const rows = await fetchSheetRowsRaw(spreadsheetId, "laundry!A:J");
 
         const updates: { range: string; values: any[][] }[] = [];
         const newRows: string[][] = [];
@@ -718,9 +718,10 @@ export async function syncLaundry(direction: SyncDirection): Promise<SyncResult>
           row[LAUNDRY_COL.CANCEL_REASON] = item.cancelReason || "";
           row[LAUNDRY_COL.CREATION_TIMESTAMP] = item.creationTimestamp || "";
           row[LAUNDRY_COL.CANCEL_TIMESTAMP] = item.cancelTimestamp || "";
+          row[LAUNDRY_COL.MACHINE_USING] = item.machine || "";
 
           if (rowIndex !== -1) {
-            updates.push({ range: `laundry!A${rowIndex + 1}:I${rowIndex + 1}`, values: [row] });
+            updates.push({ range: `laundry!A${rowIndex + 1}:J${rowIndex + 1}`, values: [row] });
           } else {
             newRows.push(row);
           }
@@ -730,7 +731,7 @@ export async function syncLaundry(direction: SyncDirection): Promise<SyncResult>
           await batchUpdateValues(spreadsheetId, updates);
         }
         if (newRows.length > 0) {
-          await appendSheetRow(spreadsheetId, "laundry!A:I", newRows);
+          await appendSheetRow(spreadsheetId, "laundry!A:J", newRows);
         }
       }
     );

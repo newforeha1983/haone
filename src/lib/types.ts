@@ -212,7 +212,8 @@ export const LAUNDRY_COL = {
   STATUS: 5,
   CANCEL_REASON: 6,
   CREATION_TIMESTAMP: 7,
-  CANCEL_TIMESTAMP: 8
+  CANCEL_TIMESTAMP: 8,
+  MACHINE_USING: 9
 } as const;
 
 export const PAYMENT_REQUEST_COL = {
@@ -413,6 +414,7 @@ export interface LaundryRecord {
   timeEnd: string;
   status: LaundryStatus | string;
   cancelReason: string;
+  machine: string;
   creationTimestamp?: string;
   cancelTimestamp?: string;
   displayName?: string;

@@ -32,7 +32,7 @@ export const GET: RequestHandler = async ({ request }) => {
 
     const [constantRows, resRows, accRows, userRows, activeTerm] = await fetchSheetsData(client, [
       "constants!A:C",
-      "laundry!A:I",
+      "laundry!A:J",
       "accounts!A:L",
       "users!A:P",
       "TERM_CURR"
@@ -134,7 +134,7 @@ export const POST: RequestHandler = async ({ request }) => {
     }
 
     const data = await request.json();
-    const { date, timeStart, timeEnd } = data;
+    const { date, timeStart, timeEnd, machine } = data;
 
     if (!date || !timeStart || !timeEnd) {
       return json({ error: "Date, Start Time, and End Time are required" }, { status: 400 });
@@ -148,6 +148,10 @@ export const POST: RequestHandler = async ({ request }) => {
     maxAdvance.setDate(now.getDate() + maxAdvanceDays);
     if (date > maxAdvance) {
       return json({ error: `Max of ${maxAdvanceDays} days in advance` }, { status: 400 });
+    }
+
+    if (!machine) {
+      return json({ error: "Washing Machine to use is required" }, { status: 400 });
     }
 
     const startMinutes = parseTimeMinutes(timeStart);
@@ -166,14 +170,15 @@ export const POST: RequestHandler = async ({ request }) => {
       return json({ error: "Reservations cannot exceed 3 hours" }, { status: 400 });
     }
 
-    const [resRows] = await fetchSheetsData(client, ["laundry!A:I"]);
+    const [resRows] = await fetchSheetsData(client, ["laundry!A:J"]);
     const existing = resRows.slice(1).map((r: any) => ({
       id: r[LAUNDRY_COL.ID],
       residentId: r[LAUNDRY_COL.RESIDENT_ID],
       date: r[LAUNDRY_COL.DATE],
       timeStart: r[LAUNDRY_COL.TIME_START],
       timeEnd: r[LAUNDRY_COL.TIME_END],
-      status: r[LAUNDRY_COL.STATUS] || "ACTIVE"
+      status: r[LAUNDRY_COL.STATUS] || "ACTIVE",
+      machine: r[LAUNDRY_COL.MACHINE_USING]
     }));
 
     const activeReservations = existing.filter(
@@ -199,9 +204,9 @@ export const POST: RequestHandler = async ({ request }) => {
     const id = crypto.randomUUID();
     const nowStr = new Date().toISOString();
 
-    const row = [id, residentId, date, timeStart, timeEnd, "ACTIVE", "", nowStr, ""];
+    const row = [id, residentId, date, timeStart, timeEnd, "ACTIVE", "", nowStr, "", machine];
 
-    await appendSheetValue(client, PUBLIC_GS_SR_ID, "laundry!A:I", [row]);
+    await appendSheetValue(client, PUBLIC_GS_SR_ID, "laundry!A:J", [row]);
 
     return json({ success: true, id });
   } catch (e: any) {
@@ -230,7 +235,7 @@ export const DELETE: RequestHandler = async ({ request }) => {
 
   try {
     const client = await getSheetsClient();
-    const [constantRows, resRows] = await fetchSheetsData(client, ["constants!A:C", "laundry!A:I"]);
+    const [constantRows, resRows] = await fetchSheetsData(client, ["constants!A:C", "laundry!A:J"]);
 
     const isLaundryEnabled = isFeatureFlagEnabledDirect(constantRows, "FEATURE_FLAG_LAUNDRY");
 

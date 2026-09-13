@@ -27,7 +27,7 @@ export const sheetsLaundryService: LaundryServiceInterface = {
     if (!uiSettings.sharedRecordsId) {
       return [];
     }
-    const rows = await fetchSheetRowsRaw(uiSettings.sharedRecordsId, "laundry!A:I", shouldRefresh);
+    const rows = await fetchSheetRowsRaw(uiSettings.sharedRecordsId, "laundry!A:J", shouldRefresh);
     let items = rows.slice(1).map((row) => ({
       id: (row[LAUNDRY_COL.ID] || "").trim(),
       residentId: (row[LAUNDRY_COL.RESIDENT_ID] || "").trim(),
@@ -38,6 +38,7 @@ export const sheetsLaundryService: LaundryServiceInterface = {
       cancelReason: (row[LAUNDRY_COL.CANCEL_REASON] || "").trim(),
       creationTimestamp: (row[LAUNDRY_COL.CREATION_TIMESTAMP] || "").trim(),
       cancelTimestamp: (row[LAUNDRY_COL.CANCEL_TIMESTAMP] || "").trim(),
+      machine: (row[LAUNDRY_COL.MACHINE_USING] || "").trim(),
       raw: row
     }));
     if (residentId) {
@@ -70,7 +71,8 @@ export const sheetsLaundryService: LaundryServiceInterface = {
     row[LAUNDRY_COL.CANCEL_REASON] = data.cancelReason || "";
     row[LAUNDRY_COL.CREATION_TIMESTAMP] = data.creationTimestamp || new Date().toISOString();
     row[LAUNDRY_COL.CANCEL_TIMESTAMP] = data.cancelTimestamp || "";
-    await appendSheetRow(uiSettings.sharedRecordsId, "laundry!A:I", [row]);
+    row[LAUNDRY_COL.MACHINE_USING] = data.machine || "";
+    await appendSheetRow(uiSettings.sharedRecordsId, "laundry!A:J", [row]);
   },
 
   async addReservationsBatch(entries: Partial<LaundryRecord>[]): Promise<void> {
@@ -89,9 +91,10 @@ export const sheetsLaundryService: LaundryServiceInterface = {
       row[LAUNDRY_COL.CANCEL_REASON] = data.cancelReason || "";
       row[LAUNDRY_COL.CREATION_TIMESTAMP] = data.creationTimestamp || new Date().toISOString();
       row[LAUNDRY_COL.CANCEL_TIMESTAMP] = data.cancelTimestamp || "";
+      row[LAUNDRY_COL.MACHINE_USING] = data.machine || "";
       return row;
     });
-    await appendSheetRow(uiSettings.sharedRecordsId, "laundry!A:I", rows);
+    await appendSheetRow(uiSettings.sharedRecordsId, "laundry!A:J", rows);
   },
 
   async cancelReservation(id: string, reason: string): Promise<void> {
@@ -108,7 +111,7 @@ export const sheetsLaundryService: LaundryServiceInterface = {
     if (!uiSettings.sharedRecordsId) {
       throw new Error("Shared Records ID not configured");
     }
-    const rows = await fetchSheetRowsRaw(uiSettings.sharedRecordsId, "laundry!A:I");
+    const rows = await fetchSheetRowsRaw(uiSettings.sharedRecordsId, "laundry!A:J");
     const rowIndex = rows.findIndex((r) => (r[LAUNDRY_COL.ID] || "").trim() === id);
     if (rowIndex === -1) {
       throw new Error("Reservation not found");
