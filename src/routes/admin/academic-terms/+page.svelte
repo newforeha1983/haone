@@ -36,13 +36,11 @@
 
   // Fee Editing State
   let editingFeesFor = $state<{ value: string; label: string } | null>(null);
-  let feeData = $state({
-    assoc: 0,
-    water: 0,
-    total: 0,
-    assoc_cp: 0,
-    water_cp: 0
-  });
+
+  type FeeData = { key: string, name: string, value: number }[];
+  let feeData = $state<FeeData>([]); // wait are we using floats as currency?
+  let feeCollectionPeriodData = $state<FeeData>([]);
+  let totalFees = $state(0);
 
   const termOptions = [
     { value: "1S", label: "1st Semester" },
@@ -120,19 +118,20 @@
       const found = allConstants.find((c) => c.key === key);
       return found ? parseFloat(found.value) || 0 : 0;
     };
-
-    feeData = {
-      assoc: getVal("ASSOC"),
-      water: getVal("WATER"),
-      total: getVal("TOTAL"),
-      assoc_cp: getVal("ASSOC_CP"),
-      water_cp: getVal("WATER_CP")
+    const getName = (suffix: string) => {
+      const found = allConstants.find((c) => c.key === `FEES_NAME_${suffix}` || c.key === `FEES_NAME_${suffix.replace("_CP", "")}`);
+      return found?.value || "Unknown Fee";
     };
+    const feeList = allConstants.find((c) => c.key === `FEES_${p}_LIST`);
+    const feecpList = allConstants.find((c) => c.key === `FEES_${p}_CPLIST`);
+
+    feeData = ((feeList && feeList.value) || "").split(',').map((k) => ({ key: k, name: getName(k.toUpperCase()), value: getVal(k.toUpperCase()) }));
+    feeCollectionPeriodData = ((feecpList && feecpList.value) || "").split(',').map((k) => ({ key: k, name: getName(k.toUpperCase()), value: getVal(k.toUpperCase()) }));
   }
 
   // Reactive total calculation
   $effect(() => {
-    feeData.total = (feeData.assoc || 0) + (feeData.water || 0);
+    totalFees = Object.values(feeData).reduce((p, c) => p + c.value, 0);
   });
 
   async function saveFees() {
@@ -143,13 +142,8 @@
     errorMessage = "";
 
     const p = editingFeesFor.value;
-    const updates = [
-      { suffix: "ASSOC", val: feeData.assoc },
-      { suffix: "WATER", val: feeData.water },
-      { suffix: "TOTAL", val: feeData.total },
-      { suffix: "ASSOC_CP", val: feeData.assoc_cp },
-      { suffix: "WATER_CP", val: feeData.water_cp }
-    ];
+    const updates: { suffix: string, val: number }[] = [...feeData, ...feeCollectionPeriodData]
+      .map((x) => ({ suffix: x.key.toUpperCase(), val: x.value }));
 
     try {
       for (const u of updates) {
@@ -353,14 +347,12 @@
       {/if}
 
       <div class="grid grid-cols-2 gap-4">
-        <div class="space-y-2">
-          <Label>Association Fee</Label>
-          <Input type="number" bind:value={feeData.assoc} step="0.01" />
-        </div>
-        <div class="space-y-2">
-          <Label>Water Fee</Label>
-          <Input type="number" bind:value={feeData.water} step="0.01" />
-        </div>
+        {#each feeData as fee}
+          <div class="space-y-2">
+            <Label>{fee.name}</Label>
+            <Input type="number" bind:value={fee.value} step="0.01" />
+          </div>
+        {/each}
       </div>
 
       <div class="rounded-xl border bg-muted/30 p-4">
@@ -370,7 +362,7 @@
             <span class="text-xs font-medium tracking-wider uppercase">Total Fee</span>
           </div>
           <span class="text-xl font-black text-foreground"
-            >₱{feeData.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span
+            >₱{totalFees.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span
           >
         </div>
       </div>
@@ -382,14 +374,12 @@
           >Collection Periods (Times per Term)</Label
         >
         <div class="grid grid-cols-2 gap-4">
-          <div class="space-y-2">
-            <Label class="text-xs">Association Fee</Label>
-            <Input type="number" bind:value={feeData.assoc_cp} />
-          </div>
-          <div class="space-y-2">
-            <Label class="text-xs">Water Fee</Label>
-            <Input type="number" bind:value={feeData.water_cp} />
-          </div>
+          {#each feeCollectionPeriodData as fee}
+            <div class="space-y-2">
+              <Label>{fee.name}</Label>
+              <Input type="number" bind:value={fee.value} step="0.01" />
+            </div>
+          {/each}
         </div>
       </div>
     </div>
