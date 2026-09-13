@@ -253,7 +253,7 @@
       .sort((a, b) => b._sortKey - a._sortKey);
   });
 
-  let isRulesOpen = $state(false);
+  let isRulesOpen = $state(true);
 </script>
 
 <div class="mx-auto max-w-7xl space-y-3">
