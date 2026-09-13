@@ -16,6 +16,7 @@ import { parseTimeMinutes } from "$utils/parsers";
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import { isFeatureFlagEnabledDirect } from "$api/utils/feature-flags";
+import { CONSTANT_COL } from "$lib/types";
 
 /**
  * GET: Fetch all reservations + user room mapping
@@ -137,6 +138,16 @@ export const POST: RequestHandler = async ({ request }) => {
 
     if (!date || !timeStart || !timeEnd) {
       return json({ error: "Date, Start Time, and End Time are required" }, { status: 400 });
+    }
+
+    const maxAdvanceDays = Number(constantRows.find((r: any) => {
+        return ((r[CONSTANT_COL.KEY] || "").trim() === "LAUNDRY_MAX_ADVANCE_DAYS");
+    })) || 14;
+    const now = new Date();
+    const maxAdvance = new Date();
+    maxAdvance.setDate(now.getDate() + maxAdvanceDays);
+    if (date > maxAdvance) {
+      return json({ error: `Max of ${maxAdvanceDays} days in advance` }, { status: 400 });
     }
 
     const startMinutes = parseTimeMinutes(timeStart);

@@ -1,6 +1,7 @@
 import { constantsService } from "$api/services/constants-service";
 import { laundryService } from "$api/services/laundry-service";
 import { isFeatureFlagEnabledFetch } from "$api/utils/feature-flags";
+import { browser } from "$app/env";
 import {
   type LaundryRecord,
   type PaginatedResponse,
@@ -19,6 +20,8 @@ export interface ValidateLaundryOptions {
   isAdmin?: boolean;
   existingReservations?: LaundryRecord[];
 }
+
+const maxAdvanceDays = browser ? Number(await constantsService.fetchConstantByKey("FEATURE_FLAG_LAUNDRY_MAX_ADVANCE_DAYS")) || 14 : 14;
 
 export function validateLaundryReservation(options: ValidateLaundryOptions): string | null {
   try {
@@ -100,9 +103,10 @@ export function validateLaundryReservation(options: ValidateLaundryOptions): str
       }
 
       const maxAdvance = new Date();
-      maxAdvance.setDate(now.getDate() + 14);
+      maxAdvance.setDate(now.getDate() + maxAdvanceDays);
+      console.log(maxAdvanceDays);
       if (selectedDateTime > maxAdvance) {
-        return "Max 2 weeks in advance";
+        return `Maximum of ${maxAdvanceDays} days in advance`;
       }
       if (startMinutes < 300 || endMinutes > 1320) {
         return "Open 5 AM - 10 PM only";
